@@ -1,2 +1,2 @@
 # SQL
-my favorite SQL on IBMi powered by ACS (Access Client Solutions)
+my favorite SQLs on IBMi powered by ACS (Access Client Solutions)
