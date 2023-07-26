@@ -1,0 +1,61 @@
+-- Datumsprüfung als skalare SQL Function
+-- Eingabe-Parm    CHAR(10) ISO-Datum zum prüfen
+-- Return  Parm    VARCHAR(40) Nachricht (bzw *OK)
+-- Returns Message '*OK' = Datum ist richtig
+--                 other = Fehlernachricht, warum nicht richtig
+-- sql-Datumsprüfung_CHKISODAT_Validierung.sql
+-- 04.12.2022 Taepper
+
+create function chkdate (Date10char char(10))
+returns varchar(40)
+language sql
+modifies sql data
+begin
+declare v_year4 numeric;
+declare v_message varchar(40);
+if length(trim(date10char))<10 then set v_message='Ungültige Länge (Länge<10)'; --Invalid (len<10)
+elseif substr(date10char, 5, 1)<>'-' then set v_message='Ungültiges Trennzeichen (1)'; --'Invalid Separator (1)'
+elseif substr(date10char, 8, 1)<>'-' then set v_message='Ungültiges Trennzeichen (2)'; --'Invalid Separator (2)'
+elseif substr(date10char, 1, 4) not between '1600' and '9999' then set v_message='Jahr ungültig (1600-9999 erlaubt)'; --'Invalid year (1600-9999 allowed)'
+elseif substr(date10char, 6, 2) not between '01' and '12' then set v_message='Monat ungültig (01-12 erlaubt)'; --'Invalid month (01-12 allowed)'
+elseif substr(date10char, 6, 2) in('01','03','05','07','08','10','12') and substr(date10char, 9, 2) not between '01' and '31' then set v_message='Tag ungültig (01-31 erlaubt)'; --'Invalid day (01-31 allowed)'
+elseif substr(date10char, 6, 2) in('04','06','09','11') and substr(date10char, 9, 2) not between '01' and '30' then set v_message='Tag ungültig (01-30 erlaubt)'; --'Invalid day (01-30 allowed)'
+
+-- Die heutigen regelmäßigen Schalttage existieren, seit Papst Gregor XIII. in einer päpstlichen Bulle am 24. Februar 1582
+-- die Streichung von zehn aufgelaufenen Schalttagen anordnete.
+-- Von da an sind alle ganzzahlig durch vier teilbaren Jahre Schaltjahre,
+-- mit Ausnahme der Jahrhunderte, die nicht durch 400 teilbar sind, also 1700, 1800, 1900.
+-- Dagegen waren 1600 und 2000 Schaltjahre.
+-- Analog werden 2100, 2200, 2300 und 2500 keine Schaltjahre, 2400 jedoch ein Schaltjahr sein.
+
+elseif substr(date10char, 6, 2)='02' then set v_year4=dec(substr(date10char, 1, 4)); call systools.lprintf('v_year='concat char(v_year4));
+if mod(v_year4, 4) =0 and mod(v_year4, 400) =0 and substr(date10char, 9, 2) not between '01' and '28' then set v_message='Tag ungültig (01-28 erlaubt) 1';
+--'Invalid day (01-28 allowed) 1' alle 400 Jahre nicht (der Papst hats gesagt!)
+elseif mod(v_year4, 4) =0 and mod(v_year4, 400) <>0 and substr(date10char, 9, 2) not between '01' and '29' then set v_message='Tag ungültig (01-29 erlaubt) 2';
+--'Invalid day (01-29 allowed) 2' Schaltjahr, aber nicht 1600 2000 2400...
+elseif mod(v_year4, 4) <>0 and mod(v_year4, 400) <>0 and substr(date10char, 9, 2) not between '01' and '28' then set v_message='Tag ungültig (01-28 erlaubt) 3';
+--'Invalid day (01-28 allowed) 3' Normaler Februar
+else set v_message='*OK';
+end if;
+else set v_message='*OK';
+end if;
+
+
+return (v_message);
+end;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
